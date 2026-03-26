@@ -16,18 +16,7 @@ const app = express();
 // Trust proxy for rate limiting behind Nginx
 app.set("trust proxy", 1);
 
-app.use(helmet());
-
-const authRoutes = require("./src/routes/auth.routes");
-const userRoutes = require("./src/routes/user.routes");
-const todoRoutes = require("./src/routes/todo.routes");
-const familyTreeRoutes = require("./src/routes/familyTree.routes");
-const personRoutes = require("./src/routes/person.routes");
-const marriageRoutes = require("./src/routes/marriage.routes");
-const uploadRoutes = require("./src/routes/upload.routes");
-const seedRoutes = require("./src/routes/seed.routes");
-
-// CORS configuration
+// CORS configuration - MUST be before helmet
 const corsOptions = {
   origin: [
     "http://localhost:5173",
@@ -41,6 +30,21 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Helmet with CORS-friendly settings
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
+
+const authRoutes = require("./src/routes/auth.routes");
+const userRoutes = require("./src/routes/user.routes");
+const todoRoutes = require("./src/routes/todo.routes");
+const familyTreeRoutes = require("./src/routes/familyTree.routes");
+const personRoutes = require("./src/routes/person.routes");
+const marriageRoutes = require("./src/routes/marriage.routes");
+const uploadRoutes = require("./src/routes/upload.routes");
+const seedRoutes = require("./src/routes/seed.routes");
+
 app.use(express.json());
 app.use(requestLogger);
 
