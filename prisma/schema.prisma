@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Todo {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int   @map("user_id")
+
+  @@map("todos")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(500)
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+
+
+
+enum Role {
+  ADMIN      // Tạo, sửa, xóa tất cả
+  EDITOR     // Sửa cây được mời
+  VIEWER     // Chỉ xem
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(100)
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  role      Role     @default(VIEWER)
+  // todo remove this later  
+  todos         Todo[]
+
+   // User có thể quản lý nhiều FamilyTree
+  familyTrees    FamilyTree[]    @relation("Owner")
+  familyTreeMembers FamilyTreeMember[]
+  refreshTokens RefreshToken[]
+  person Person? @relation("LinkedPerson")
+  createdPersons Person[] @relation("PersonCreator")
+  @@map("users")
+}
+
+// ==================== FAMILY TREE ====================
+model FamilyTree {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(200)  // "Gia phả họ Nguyễn"
+  description String?
+  ownerId     Int      @map("owner_id")  // Admin của cây này
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  owner   User     @relation("Owner", fields: [ownerId], references: [id])
+  members FamilyTreeMember[]
+  persons Person[]
+  marriages Marriage[]  // Thêm dòng này
+  @@map("family_trees")
+
+
+}
+
+enum TreePermission {
+  VIEW    // Chỉ xem
+  EDIT    // Sửa thông tin, kéo thả
+  ADMIN   // Thêm/xóa người, mời thành viên
+}
+
+// Bảng trung gian: User được mời vào FamilyTree với quyền gì
+model FamilyTreeMember {
+  id           Int            @id @default(autoincrement())
+  userId       Int            @map("user_id")
+  familyTreeId Int            @map("family_tree_id")
+  permission   TreePermission @default(VIEW)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyTree FamilyTree @relation(fields: [familyTreeId], references: [id], onDelete: Cascade)
+  @@unique([userId, familyTreeId])
+  @@map("family_tree_members")
+}
+
+
+// ==================== PERSON (Thành viên trong gia phả) ====================
+model Person {
+  id           Int       @id @default(autoincrement())
+  familyTreeId Int       @map("family_tree_id")
+  
+  // Thông tin cá nhân
+  name         String    @db.VarChar(100)
+  phoneNumber  String?   @map("phone_number") @db.VarChar(20)
+  gender       Gender
+  birthDate    DateTime? @map("birth_date")
+  birthPlace   String?   @map("birth_place")
+  avatar       String?
+  bio          String?
+
+  // ===== AI ĐÃ TẠO PERSON NÀY =====
+  createdById  Int       @map("created_by_id")
+  createdBy    User      @relation("PersonCreator", fields: [createdById], references: [id])
+
+  // ===== QUAN HỆ VỚI USER =====
+  userId       Int?      @unique @map("user_id")
+  user         User?     @relation( "LinkedPerson", fields: [userId], references: [id])
+
+   // ===== TRẠNG THÁI SỐNG/MẤT =====
+  isDeceased   Boolean   @default(false) @map("is_deceased")
+  deathDate    DateTime? @map("death_date")
+  deathPlace   String?   @map("death_place") @db.VarChar(200)
+  burialPlace  String?   @map("burial_place") @db.VarChar(200)  // Nơi an táng
+  
+  // ===== QUAN HỆ CHA MẸ =====
+  fatherId     Int?      @map("father_id")
+  motherId     Int?      @map("mother_id")
+  
+   // ===== VỊ TRÍ TRÊN CANVAS =====
+  positionX    Float     @default(0) @map("position_x")
+  positionY    Float     @default(0) @map("position_y")
+  branchColor  String    @default("#3b82f6") @map("branch_color")
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  // ===== RELATIONS =====
+  familyTree       FamilyTree @relation(fields: [familyTreeId], references: [id], onDelete: Cascade)
+  father           Person?    @relation("Father", fields: [fatherId], references: [id])
+  mother           Person?    @relation("Mother", fields: [motherId], references: [id])
+  childrenAsFather Person[]   @relation("Father")
+  childrenAsMother Person[]   @relation("Mother")
+
+   // Quan hệ hôn nhân
+  marriagesAsSpouse1 Marriage[] @relation("Spouse1")
+  marriagesAsSpouse2 Marriage[] @relation("Spouse2")
+  
+  // ===== INDEXES =====
+  @@index([familyTreeId])
+  @@index([fatherId])
+  @@index([motherId])
+  @@index([createdById])
+  @@map("persons")
+}
+
+// ===== BẢNG HÔN NHÂN (Quan hệ vợ chồng) =====
+model Marriage {
+  id           Int             @id @default(autoincrement())
+  familyTreeId Int             @map("family_tree_id")
+  
+  // 2 người trong hôn nhân
+  spouse1Id    Int             @map("spouse1_id")
+  spouse2Id    Int             @map("spouse2_id")
+  
+  // Thông tin hôn nhân
+  marriageDate DateTime?       @map("marriage_date")  // Ngày cưới
+  marriagePlace String?        @map("marriage_place") @db.VarChar(200)
+  
+  // Trạng thái hôn nhân
+  status       MarriageStatus  @default(MARRIED)
+  
+  // Nếu ly hôn
+  divorceDate  DateTime?       @map("divorce_date")
+  divorceReason String?        @map("divorce_reason") @db.VarChar(500)
+  
+  // Thứ tự hôn nhân (vợ/chồng thứ mấy)
+  orderForSpouse1 Int          @default(1) @map("order_for_spouse1")  // Đây là vợ/chồng thứ mấy của spouse1
+  orderForSpouse2 Int          @default(1) @map("order_for_spouse2")  // Đây là vợ/chồng thứ mấy của spouse2
+  
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  // Relations
+  familyTree FamilyTree @relation(fields: [familyTreeId], references: [id], onDelete: Cascade)
+  spouse1    Person     @relation("Spouse1", fields: [spouse1Id], references: [id], onDelete: Cascade)
+  spouse2    Person     @relation("Spouse2", fields: [spouse2Id], references: [id], onDelete: Cascade)
+  
+  // ===== INDEXES =====
+  @@index([familyTreeId])
+  @@index([spouse1Id])
+  @@index([spouse2Id])
+  @@unique([spouse1Id, spouse2Id])  // Không cho phép duplicate
+  @@map("marriages")
+}
+
+enum MarriageStatus {
+  MARRIED      // Đang kết hôn
+  DIVORCED     // Đã ly hôn
+  WIDOWED      // Góa (1 người đã mất)
+  SEPARATED    // Ly thân
+}
+
+
+enum Gender {
+  MALE
+  FEMALE
+}
+

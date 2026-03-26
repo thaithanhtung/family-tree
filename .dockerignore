@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build
+dist
+build
+
+# Frontend (build riêng)
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Logs
+logs
+*.log
+
+# Test
+coverage
+.nyc_output
+
+# Misc
+README.md
+.DS_Store
+Thumbs.db
