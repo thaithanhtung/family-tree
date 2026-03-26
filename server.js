@@ -27,7 +27,20 @@ const marriageRoutes = require("./src/routes/marriage.routes");
 const uploadRoutes = require("./src/routes/upload.routes");
 const seedRoutes = require("./src/routes/seed.routes");
 
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://family-tree-frontend-cqp2.onrender.com",
+    process.env.FRONTEND_URL,
+  ].filter(Boolean),
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(requestLogger);
 
