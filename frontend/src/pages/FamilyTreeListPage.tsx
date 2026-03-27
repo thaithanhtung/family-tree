@@ -100,9 +100,6 @@ export function FamilyTreeListPage() {
             <span className="text-gray-600">
               Xin chào, {user?.name || user?.email}
             </span>
-            <Link to="/todos" className="text-blue-600 hover:text-blue-800">
-              Todos
-            </Link>
             <button
               onClick={logout}
               className="px-4 py-2 text-sm text-red-600 hover:text-red-800"

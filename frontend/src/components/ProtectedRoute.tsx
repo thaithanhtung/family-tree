@@ -37,7 +37,7 @@ export function PublicRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/todos" replace />;
+    return <Navigate to="/family-trees" replace />;
   }
 
   return <Outlet />;

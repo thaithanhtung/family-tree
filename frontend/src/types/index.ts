@@ -2,30 +2,6 @@ export interface User {
   id: number;
   name: string | null;
   email: string;
-  todos?: Todo[];
-}
-
-export interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-  userId: number;
-  user?: User;
-}
-
-export interface CreateUserInput {
-  name: string;
-  email: string;
-}
-
-export interface CreateTodoInput {
-  title: string;
-  userId?: number;
-}
-
-export interface UpdateTodoInput {
-  title?: string;
-  completed?: boolean;
 }
 
 export interface LoginInput {
@@ -43,6 +19,11 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
 }
 
 // ==================== FAMILY TREE ====================
